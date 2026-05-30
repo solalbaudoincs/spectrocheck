@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { api, subscribeScan } from './api'
+import { api, subscribeScan, LIBRARY_TARGET } from './api'
 import type { Health, RekordboxStatus, TrackResult, Verdict } from './api'
 import { Sidebar } from './components/Sidebar'
 import { FilterChips } from './components/FilterChips'
 import { ResultsTable, type Sort, type SortKey } from './components/ResultsTable'
 import { DetailPanel } from './components/DetailPanel'
+import { Logo } from './components/icons'
 
 type Mode = 'rekordbox' | 'folder'
 
@@ -96,9 +97,11 @@ export default function App() {
     setScanning(true)
     setTotal(0)
     const req =
-      mode === 'rekordbox'
-        ? { playlist, contentsRoot: contentsRoot || undefined }
-        : { path: folderPath }
+      mode === 'folder'
+        ? { path: folderPath }
+        : playlist === LIBRARY_TARGET
+          ? { path: contentsRoot } // whole library = scan the entire USB Contents
+          : { playlist, contentsRoot: contentsRoot || undefined }
     try {
       const s = await api.startScan(req)
       setTotal(s.total)
@@ -162,6 +165,11 @@ export default function App() {
 
   const flagged = (counts.TRANSCODE || 0) + (counts['LOSSY SOURCE'] || 0)
 
+  // Skeleton placeholders for tracks queued but not yet analysed (when unfiltered).
+  const pending =
+    scanning && active.size === 0 && !search.trim() ? Math.max(0, total - results.length) : 0
+  const pct = total ? Math.round((results.length / total) * 100) : 0
+
   const exportView = (format: 'csv' | 'json') => {
     if (format === 'csv') downloadBlob('transcode-scan.csv', rowsToCsv(view), 'text/csv')
     else downloadBlob('transcode-scan.json', JSON.stringify(view, null, 2), 'application/json')
@@ -172,23 +180,23 @@ export default function App() {
       {/* header */}
       <header className="flex items-center justify-between border-b border-line bg-surface px-4 py-2.5">
         <div className="flex items-center gap-2.5">
-          <span className="grid h-7 w-7 place-items-center rounded-md bg-accent/15 text-sm ring-1 ring-accent/30">
-            🎛️
+          <span className="grid h-7 w-7 place-items-center rounded-md bg-accent/10 ring-1 ring-accent/25">
+            <Logo className="h-4 w-4 text-accent" />
           </span>
           <h1 className="text-sm font-semibold tracking-tight text-ink">Transcode Detector</h1>
-          <span className="hidden text-line-strong sm:inline">/</span>
-          <span className="hidden text-xs text-muted sm:inline">
+          <span className="hidden text-[11px] text-muted sm:inline">
             flags audio whose real quality is below its tag
           </span>
         </div>
-        <div className="flex items-center gap-2 rounded-md bg-input px-2.5 py-1 ring-1 ring-line">
-          <span className={`h-2 w-2 rounded-full ${health?.ok ? 'bg-emerald-400' : 'bg-rose-500'}`} />
-          <span className="mono text-[11px] text-muted">
-            {health?.ok
-              ? (health.ffmpeg || '').split(' ').slice(0, 3).join(' ')
-              : health?.error || 'checking…'}
-          </span>
-        </div>
+        {health && !health.ok && (
+          <div
+            className="flex items-center gap-2 rounded-md bg-rose-500/10 px-2.5 py-1 ring-1 ring-rose-500/30"
+            title={health.error || ''}
+          >
+            <span className="h-2 w-2 rounded-full bg-rose-500" />
+            <span className="text-[11px] text-rose-300">ffmpeg missing</span>
+          </div>
+        )}
       </header>
 
       <div className="flex min-h-0 flex-1">
@@ -221,7 +229,13 @@ export default function App() {
                 className="w-52 rounded-md border border-line bg-input px-2.5 py-1.5 text-xs text-body transition focus:border-accent"
               />
               <span className="text-xs text-muted">
-                {results.length} scanned
+                {scanning ? (
+                  <span className="text-accent-2">
+                    Scanning {results.length} / {total}…
+                  </span>
+                ) : (
+                  `${results.length} scanned`
+                )}
                 {flagged > 0 && <span className="ml-1.5 text-rose-400">{flagged} flagged</span>}
               </span>
               {results.length > 0 && (
@@ -243,11 +257,20 @@ export default function App() {
             </div>
           </div>
 
+          {scanning && (
+            <div className="h-0.5 w-full bg-line">
+              <div
+                className="h-full bg-accent transition-all duration-200"
+                style={{ width: `${Math.max(pct, 3)}%` }}
+              />
+            </div>
+          )}
+
           <div className="flex min-h-0 flex-1">
             {results.length === 0 && !scanning ? (
               <div className="fade-in flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center text-muted">
-                <div className="grid h-14 w-14 place-items-center rounded-2xl bg-accent/10 text-3xl ring-1 ring-accent/20">
-                  📊
+                <div className="grid h-14 w-14 place-items-center rounded-xl bg-accent/[0.06] ring-1 ring-line">
+                  <Logo className="h-7 w-7 text-accent/70" />
                 </div>
                 <p className="text-sm text-body">
                   Pick a playlist on the left, then hit{' '}
@@ -262,6 +285,7 @@ export default function App() {
               <>
                 <ResultsTable
                   rows={view}
+                  pending={pending}
                   sort={sort}
                   onSort={onSort}
                   selected={selected?.file ?? null}

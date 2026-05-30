@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import type { CSSProperties } from 'react'
 import { FixedSizeList as List, type ListChildComponentProps } from 'react-window'
 import type { TrackResult } from '../api'
 import { VerdictBadge } from './VerdictBadge'
@@ -48,8 +49,30 @@ function ConfBar({ value }: { value: number }) {
   )
 }
 
+function SkeletonRow({ style }: { style: CSSProperties }) {
+  return (
+    <div
+      style={{ ...style, gridTemplateColumns: COLS }}
+      className="grid items-center gap-2 border-b border-l-2 border-line/60 border-l-transparent px-3"
+    >
+      <div className="h-[34px] w-[34px] animate-pulse rounded bg-panel" />
+      <div className="h-4 w-20 animate-pulse rounded bg-panel" />
+      <div className="space-y-1.5">
+        <div className="h-3 w-40 animate-pulse rounded bg-panel" />
+        <div className="h-2.5 w-24 animate-pulse rounded bg-panel/60" />
+      </div>
+      <div className="h-3 w-8 animate-pulse rounded bg-panel" />
+      <div className="ml-auto h-3 w-8 animate-pulse rounded bg-panel" />
+      <div className="ml-auto h-3 w-10 animate-pulse rounded bg-panel" />
+      <div className="h-3 w-20 animate-pulse rounded bg-panel" />
+      <div className="h-1.5 w-14 animate-pulse rounded-full bg-panel" />
+    </div>
+  )
+}
+
 function Row({ index, style, data }: ListChildComponentProps<RowData>) {
   const r = data.rows[index]
+  if (!r) return <SkeletonRow style={style} />
   const sel = data.selected === r.file
   return (
     <div
@@ -101,18 +124,21 @@ function useHeight() {
 
 export function ResultsTable({
   rows,
+  pending = 0,
   sort,
   onSort,
   selected,
   onSelect,
 }: {
   rows: TrackResult[]
+  pending?: number
   sort: Sort
   onSort: (k: SortKey) => void
   selected: string | null
   onSelect: (r: TrackResult) => void
 }) {
   const { ref, h } = useHeight()
+  const count = rows.length + pending
   return (
     <div className="fade-in flex min-h-0 flex-1 flex-col">
       <div
@@ -135,7 +161,7 @@ export function ResultsTable({
       </div>
 
       <div ref={ref} className="min-h-0 flex-1">
-        {rows.length === 0 ? (
+        {count === 0 ? (
           <div className="flex h-full items-center justify-center text-sm text-muted">
             No tracks match the current filter.
           </div>
@@ -143,7 +169,7 @@ export function ResultsTable({
           <List
             height={h}
             width="100%"
-            itemCount={rows.length}
+            itemCount={count}
             itemSize={ROW_H}
             itemData={{ rows, selected, onSelect }}
           >

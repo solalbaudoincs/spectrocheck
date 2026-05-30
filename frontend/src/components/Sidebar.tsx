@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { LIBRARY_TARGET } from '../api'
 import type { Playlist, RekordboxStatus } from '../api'
 
 type Mode = 'rekordbox' | 'folder'
@@ -35,13 +36,19 @@ export function Sidebar({
   total: number
 }) {
   const [filter, setFilter] = useState('')
+  const libraryCount = status?.libraryCount ?? 0
   const playlists: Playlist[] = (status?.playlists ?? []).filter((p) => !p.is_folder)
   const shown = filter.trim()
     ? playlists.filter((p) => p.name.toLowerCase().includes(filter.trim().toLowerCase()))
     : playlists
 
   const canScan =
-    !scanning && (mode === 'folder' ? folderPath.trim().length > 0 : playlist.trim().length > 0)
+    !scanning &&
+    (mode === 'folder'
+      ? folderPath.trim().length > 0
+      : playlist === LIBRARY_TARGET
+        ? contentsRoot.trim().length > 0
+        : playlist.trim().length > 0)
 
   return (
     <aside className="flex w-72 shrink-0 flex-col border-r border-line bg-surface">
@@ -107,6 +114,25 @@ export function Sidebar({
               <div className="px-2 py-3 text-xs text-rose-400">
                 {status.error || 'Rekordbox DB not readable'}
               </div>
+            )}
+            {libraryCount > 0 && (
+              <>
+                <button
+                  onClick={() => setPlaylist(LIBRARY_TARGET)}
+                  className={`flex w-full items-center gap-2 rounded-md border-l-2 px-2.5 py-1.5 text-left transition ${
+                    playlist === LIBRARY_TARGET
+                      ? 'border-accent bg-accent/10 text-ink'
+                      : 'border-transparent text-body hover:bg-panel'
+                  }`}
+                >
+                  <span className="truncate text-[13px] font-medium">All tracks</span>
+                  <span className="ml-auto shrink-0 text-[10px] uppercase tracking-wider text-muted">
+                    whole library
+                  </span>
+                  <span className="shrink-0 tabular-nums text-[11px] text-muted">{libraryCount}</span>
+                </button>
+                <div className="my-1.5 border-t border-line/60" />
+              </>
             )}
             {shown.map((p) => {
               const sel = p.name === playlist

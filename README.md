@@ -1,4 +1,4 @@
-# 🎛️ Transcode Detector
+# Transcode Detector
 
 A local app that scans a music library and flags audio files whose **real**
 quality is lower than their tag claims — e.g. a 128 kbps source re-encoded and

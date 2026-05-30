@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { api } from '../api'
+import { DiscIcon } from './icons'
 
 /** Album art (embedded, extracted by the backend). Falls back to a note glyph. */
 export function Cover({
@@ -20,7 +21,7 @@ export function Cover({
         style={box}
         className={`grid place-items-center bg-panel text-muted ring-1 ring-line ${radius}`}
       >
-        <span style={{ fontSize: Math.round(size * 0.42) }}>♪</span>
+        <DiscIcon style={{ width: Math.round(size * 0.5), height: Math.round(size * 0.5) }} />
       </div>
     )
   }

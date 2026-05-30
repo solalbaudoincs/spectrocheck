@@ -164,13 +164,20 @@ async def playlists():
     def work():
         info = rekordbox_source.rekordbox_info()
         roots = rekordbox_source.find_usb_contents_roots()
+        library_count = 0
+        if roots:
+            try:
+                library_count = sum(1 for _ in scanner.iter_audio_files(roots[0]))
+            except Exception:  # noqa: BLE001
+                library_count = 0
         try:
             db = rekordbox_source.open_database()
             pls = [asdict(p) for p in rekordbox_source.list_playlists(db)]
-            return {"available": True, "playlists": pls, "usbRoots": roots, **info}
+            return {"available": True, "playlists": pls, "usbRoots": roots,
+                    "libraryCount": library_count, **info}
         except Exception as exc:  # noqa: BLE001
             return {"available": False, "error": str(exc), "playlists": [],
-                    "usbRoots": roots, **info}
+                    "usbRoots": roots, "libraryCount": library_count, **info}
 
     return await loop.run_in_executor(EXEC, work)
 
