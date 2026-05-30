@@ -41,11 +41,17 @@ For each track (`backend/analysis.py`, fully unit-tested):
 
 ## Rekordbox integration
 
-`backend/rekordbox_source.py` reads the desktop `master.db` (via pyrekordbox,
-auto-key) to get a playlist's track list, then maps each track to its copy on an
-exported USB (`<drive>:\Contents`) by filename + exact byte size, so the files
-you actually play at the gig are the ones analysed. USB `Contents` folders are
-auto-detected.
+When a DJ USB is connected, `backend/devicelib.py` reads the USB's own **Device
+Library Plus** database (`PIONEER/rekordbox/exportLibrary.db`, decrypted with the
+fixed device-library key) — the authoritative, *current* playlist set for the
+stick, with exact on-USB file paths. This is what plays at the gig, and it
+avoids the common trap where the desktop `master.db` is out of sync (tracks added
+to a playlist on the stick or another machine that never synced back).
+
+With no USB present it falls back to `backend/rekordbox_source.py`, which reads
+the desktop `master.db` (via pyrekordbox, auto-key) and maps each playlist track
+to its USB copy by filename + exact byte size. USB `Contents` folders are
+auto-detected, and the sidebar shows which source (USB vs desktop) is in use.
 
 ## Setup
 

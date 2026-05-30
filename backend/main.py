@@ -28,7 +28,7 @@ from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
 
-from . import ffmpeg_tools, rekordbox_source, scanner, spectrogram
+from . import devicelib, ffmpeg_tools, rekordbox_source, scanner, spectrogram
 
 MAX_WORKERS = min(4, (os.cpu_count() or 4))
 EXEC = ThreadPoolExecutor(max_workers=MAX_WORKERS + 2)
@@ -89,12 +89,16 @@ class ScanJob:
 # --------------------------------------------------------------------------- #
 def _resolve_items(req: ScanRequest) -> tuple[list[dict], str]:
     if req.playlist:
-        db = rekordbox_source.open_database(req.dbDir, req.key)
         contents = req.contentsRoot
         if not contents:
             roots = rekordbox_source.find_usb_contents_roots()
             contents = roots[0] if roots else None
-        tracks = rekordbox_source.resolve_playlist(db, req.playlist, contents)
+        # USB device library is authoritative when present; else desktop master.db.
+        if contents and devicelib.available(contents):
+            tracks = devicelib.resolve_playlist(contents, req.playlist)
+        else:
+            db = rekordbox_source.open_database(req.dbDir, req.key)
+            tracks = rekordbox_source.resolve_playlist(db, req.playlist, contents)
         items = []
         for t in tracks:
             extra = {
@@ -170,20 +174,35 @@ async def playlists():
     def work():
         info = rekordbox_source.rekordbox_info()
         roots = rekordbox_source.find_usb_contents_roots()
+        contents = roots[0] if roots else None
         library_count = 0
-        if roots:
+        if contents:
             try:
-                library_count = sum(1 for _ in scanner.iter_audio_files(roots[0]))
+                library_count = sum(1 for _ in scanner.iter_audio_files(contents))
             except Exception:  # noqa: BLE001
                 library_count = 0
+
+        # Prefer the USB's own Device Library Plus: it is the authoritative,
+        # current playlist set for the stick (the desktop master.db can be stale).
+        if contents and devicelib.available(contents):
+            try:
+                pls = [asdict(p) for p in devicelib.list_playlists(contents)]
+                return {"available": True, "playlists": pls, "usbRoots": roots,
+                        "libraryCount": library_count, "source": "usb",
+                        "sourcePath": devicelib.export_library_path(contents), **info}
+            except Exception:  # noqa: BLE001 - fall back to the desktop database
+                pass
+
         try:
             db = rekordbox_source.open_database()
             pls = [asdict(p) for p in rekordbox_source.list_playlists(db)]
             return {"available": True, "playlists": pls, "usbRoots": roots,
-                    "libraryCount": library_count, **info}
+                    "libraryCount": library_count, "source": "desktop",
+                    "sourcePath": info.get("dbPath"), **info}
         except Exception as exc:  # noqa: BLE001
             return {"available": False, "error": str(exc), "playlists": [],
-                    "usbRoots": roots, "libraryCount": library_count, **info}
+                    "usbRoots": roots, "libraryCount": library_count,
+                    "source": "desktop", "sourcePath": info.get("dbPath"), **info}
 
     return await loop.run_in_executor(EXEC, work)
 

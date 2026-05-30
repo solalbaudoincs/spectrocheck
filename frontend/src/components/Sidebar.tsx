@@ -62,16 +62,25 @@ export function Sidebar({
             <div className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-accent" />
               <span className="text-sm font-medium text-ink">
-                Rekordbox {status?.version ?? ''}
+                {status?.source === 'usb'
+                  ? 'USB · Device Library'
+                  : `Rekordbox ${status?.version ?? ''}`}
               </span>
             </div>
-            {status?.dbPath && (
-              <div className="mono truncate text-[10px] text-muted" title={status.dbPath}>
-                {status.dbPath}
+            {(status?.sourcePath || status?.dbPath) && (
+              <div
+                className="mono truncate text-[10px] text-muted"
+                title={status?.sourcePath || status?.dbPath || ''}
+              >
+                {status?.sourcePath || status?.dbPath}
               </div>
             )}
             <div className="text-[11px] text-muted">
-              {contentsRoot ? (
+              {status?.source === 'usb' ? (
+                <>
+                  live off the stick · <span className="text-body">{contentsRoot}</span>
+                </>
+              ) : contentsRoot ? (
                 <>
                   maps to <span className="text-body">{contentsRoot}</span>
                 </>
