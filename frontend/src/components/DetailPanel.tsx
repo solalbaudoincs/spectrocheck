@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { api } from '../api'
 import type { TrackResult } from '../api'
+import { playerCompatibility } from '../players'
 import { VerdictBadge } from './VerdictBadge'
 import { Cover } from './Cover'
 
@@ -27,6 +28,10 @@ export function DetailPanel({ row, onClose }: { row: TrackResult; onClose: () =>
     setLoaded(false)
     setFailed(false)
   }, [src])
+
+  const compat = playerCompatibility(row.codec, row.sampleRate)
+  const plays = compat.filter((c) => c.ok)
+  const nope = compat.filter((c) => !c.ok)
 
   return (
     <aside className="panel-in flex w-[560px] shrink-0 flex-col border-l border-line bg-surface">
@@ -81,6 +86,51 @@ export function DetailPanel({ row, onClose }: { row: TrackResult; onClose: () =>
           <Fact label="Duration" value={row.durationSec ? `${row.durationSec.toFixed(0)} s` : '·'} />
           {row.match && <Fact label="USB match" value={row.match} />}
         </div>
+
+        {row.verdict !== 'ERROR' && (
+          <div>
+            <div className="mb-1.5 flex items-center justify-between">
+              <span className="text-[10px] uppercase tracking-wider text-muted">
+                Pioneer compatibility
+              </span>
+              <span className="tabular-nums text-[10px] text-muted">
+                {plays.length}/{compat.length} players
+              </span>
+            </div>
+            {plays.length > 0 ? (
+              <div className="flex flex-wrap gap-1">
+                {plays.map((c) => (
+                  <span
+                    key={c.name}
+                    className="rounded bg-emerald-500/10 px-1.5 py-0.5 text-[11px] text-emerald-300 ring-1 ring-emerald-500/25"
+                  >
+                    {c.name}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <div className="text-[11px] text-rose-300">No Pioneer player supports this format.</div>
+            )}
+            {nope.length > 0 && (
+              <details className="mt-2">
+                <summary className="cursor-pointer list-none text-[11px] text-muted hover:text-body">
+                  ▸ won&apos;t play on {nope.length}
+                </summary>
+                <div className="mt-1.5 space-y-1">
+                  {nope.map((c) => (
+                    <div key={c.name} className="flex items-center justify-between gap-3 text-[11px]">
+                      <span className="text-slate-400">{c.name}</span>
+                      <span className="text-right text-rose-300/80">{c.reason}</span>
+                    </div>
+                  ))}
+                </div>
+              </details>
+            )}
+            <p className="mt-1.5 text-[10px] leading-snug text-muted">
+              Based on published rekordbox-hardware format support (USB playback).
+            </p>
+          </div>
+        )}
 
         <div>
           <div className="mb-1.5 text-[10px] uppercase tracking-wider text-muted">
