@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+/* ------------------------------------------------------------------ *
+ * Design locks (taste): one theme (dark), one accent (sky), one
+ * corner-radius scale (lg for surfaces/controls, md for chips, full
+ * for bars). AA-contrast text on a layered near-black surface.
+ * ------------------------------------------------------------------ */
+:root {
+  color-scheme: dark;
+}
+
 html,
 body,
 #root {
@@ -8,14 +17,56 @@ body,
 
 body {
   margin: 0;
-  background: #0b0e14;
-  color: #c9d1d9;
+  background: #090c12;
+  color: #aeb9c7;
   font-family: ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 .mono {
   font-family: ui-monospace, "Cascadia Code", "JetBrains Mono", Consolas, Menlo, monospace;
+}
+
+::selection {
+  background: rgba(56, 189, 248, 0.25);
+}
+
+/* Single accent-locked focus treatment; box-shadow follows each
+ * element's own radius, so the shape lock is preserved. */
+input:focus-visible,
+select:focus-visible,
+button:focus-visible,
+a:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.5);
+}
+
+/* Justified motion only: the detail panel enters, the table fades in. */
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    transform: translateX(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+.panel-in {
+  animation: panel-in 0.18s ease-out;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.fade-in {
+  animation: fade-in 0.22s ease-out;
 }
 
 *::-webkit-scrollbar {
@@ -23,8 +74,11 @@ body {
   height: 10px;
 }
 *::-webkit-scrollbar-thumb {
-  background: #283041;
-  border-radius: 5px;
+  background: #232c3a;
+  border-radius: 9999px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: #2f3a4c;
 }
 *::-webkit-scrollbar-track {
   background: transparent;

@@ -3,6 +3,9 @@ import type { Playlist } from '../api'
 
 type Mode = 'rekordbox' | 'folder'
 
+const CONTROL =
+  'rounded-lg border border-slate-700 bg-[#0b0f17] px-2.5 py-1.5 text-sm text-slate-200 transition focus:border-sky-500'
+
 export function Toolbar({
   mode,
   setMode,
@@ -45,7 +48,7 @@ export function Toolbar({
     <button
       onClick={() => setMode(m)}
       className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${
-        mode === m ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-slate-200'
+        mode === m ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'
       }`}
     >
       {label}
@@ -53,8 +56,8 @@ export function Toolbar({
   )
 
   return (
-    <div className="flex flex-wrap items-end gap-3 border-b border-slate-800 bg-[#0d111a] px-4 py-3">
-      <div className="flex rounded-lg bg-slate-900 p-0.5 ring-1 ring-slate-800">
+    <div className="flex flex-wrap items-end gap-3 border-b border-slate-800/80 bg-[#0d1119] px-5 py-3">
+      <div className="flex rounded-lg bg-[#0b0f17] p-0.5 ring-1 ring-slate-800">
         {tab('rekordbox', 'Rekordbox playlist')}
         {tab('folder', 'Folder')}
       </div>
@@ -66,9 +69,9 @@ export function Toolbar({
               value={playlist}
               disabled={!rekordboxAvailable}
               onChange={(e) => setPlaylist(e.target.value)}
-              className="mono w-72 rounded-md border border-slate-700 bg-slate-900 px-2 py-1.5 text-sm text-slate-200 disabled:opacity-50"
+              className={`${CONTROL} mono w-72 disabled:opacity-50`}
             >
-              {!rekordboxAvailable && <option>— Rekordbox unavailable —</option>}
+              {!rekordboxAvailable && <option>Rekordbox unavailable</option>}
               {playlists
                 .filter((p) => !p.is_folder)
                 .map((p) => (
@@ -84,7 +87,7 @@ export function Toolbar({
               value={contentsRoot}
               onChange={(e) => setContentsRoot(e.target.value)}
               placeholder="auto-detect"
-              className="mono w-64 rounded-md border border-slate-700 bg-slate-900 px-2 py-1.5 text-sm text-slate-200"
+              className={`${CONTROL} mono w-64`}
             />
             <datalist id="usb-roots">
               {usbRoots.map((r) => (
@@ -98,8 +101,8 @@ export function Toolbar({
           <input
             value={folderPath}
             onChange={(e) => setFolderPath(e.target.value)}
-            placeholder="D:\Contents  or  C:\Users\me\Music"
-            className="mono w-[28rem] rounded-md border border-slate-700 bg-slate-900 px-2 py-1.5 text-sm text-slate-200"
+            placeholder="D:\Contents   or   C:\Users\me\Music"
+            className={`${CONTROL} mono w-[28rem]`}
           />
         </Field>
       )}
@@ -107,14 +110,16 @@ export function Toolbar({
       <button
         onClick={onScan}
         disabled={!canScan}
-        className="flex items-center gap-2 rounded-md bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-40"
+        className="flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-40"
       >
         {scanning && <Spinner />}
         {scanning ? `Scanning ${done}/${total}` : 'Scan'}
       </button>
 
       {!rekordboxAvailable && mode === 'rekordbox' && (
-        <span className="text-xs text-rose-400">{rekordboxError || 'Rekordbox DB not readable'}</span>
+        <span className="pb-1.5 text-xs text-rose-400">
+          {rekordboxError || 'Rekordbox DB not readable'}
+        </span>
       )}
     </div>
   )
@@ -122,8 +127,8 @@ export function Toolbar({
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <label className="flex flex-col gap-1">
-      <span className="text-[10px] uppercase tracking-wider text-slate-500">{label}</span>
+    <label className="flex flex-col gap-1.5">
+      <span className="text-[10px] font-medium uppercase tracking-wider text-slate-500">{label}</span>
       <div className="flex items-center gap-1">{children}</div>
     </label>
   )

@@ -17,8 +17,8 @@ export interface Sort {
   dir: 1 | -1
 }
 
-const COLS = '116px minmax(220px,1fr) 78px 70px 96px 150px 116px'
-const ROW_H = 46
+const COLS = '124px minmax(220px,1fr) 78px 70px 96px 152px 118px'
+const ROW_H = 48
 
 const HEADERS: { key: SortKey; label: string; align?: string }[] = [
   { key: 'verdict', label: 'Verdict' },
@@ -39,8 +39,8 @@ interface RowData {
 function ConfBar({ value }: { value: number }) {
   return (
     <div className="flex items-center gap-2">
-      <div className="h-1.5 w-14 overflow-hidden rounded bg-slate-800">
-        <div className="h-full bg-sky-400" style={{ width: `${Math.round(value * 100)}%` }} />
+      <div className="h-1.5 w-14 overflow-hidden rounded-full bg-slate-800">
+        <div className="h-full rounded-full bg-sky-400" style={{ width: `${Math.round(value * 100)}%` }} />
       </div>
       <span className="tabular-nums text-[11px] text-slate-400">{value.toFixed(2)}</span>
     </div>
@@ -54,29 +54,32 @@ function Row({ index, style, data }: ListChildComponentProps<RowData>) {
     <div
       style={{ ...style, gridTemplateColumns: COLS }}
       onClick={() => data.onSelect(r)}
-      className={`mono grid cursor-pointer items-center gap-2 border-b border-slate-800/60 px-3 text-[13px] ${
+      className={`mono grid cursor-pointer items-center gap-2 border-b border-slate-800/50 border-l-2 px-4 text-[13px] transition-colors ${
         sel
-          ? 'bg-sky-500/10 ring-1 ring-inset ring-sky-500/40'
-          : index % 2
-            ? 'bg-slate-900/30'
-            : ''
-      } hover:bg-slate-700/20`}
+          ? 'border-l-sky-400 bg-sky-500/10'
+          : `border-l-transparent ${index % 2 ? 'bg-slate-900/25' : ''} hover:bg-slate-800/30`
+      }`}
     >
       <div>
         <VerdictBadge verdict={r.verdict} />
       </div>
-      <div className="truncate text-slate-200" title={`${r.artist ? r.artist + ' — ' : ''}${r.name}`}>
+      <div
+        className="truncate text-slate-200"
+        title={`${r.artist ? r.artist + ' · ' : ''}${r.name}`}
+      >
         {r.name}
       </div>
-      <div className="truncate text-slate-400">{r.codec || '—'}</div>
-      <div className="text-right text-slate-300">{r.declaredKbps ?? '—'}</div>
+      <div className="truncate text-slate-400">{r.codec || '·'}</div>
+      <div className="text-right tabular-nums text-slate-300">{r.declaredKbps ?? '·'}</div>
       <div className="text-right tabular-nums text-slate-300">
-        {r.cutoffKhz ? `${r.cutoffKhz.toFixed(1)}` : '—'}
+        {r.cutoffKhz ? r.cutoffKhz.toFixed(1) : '·'}
       </div>
       <div className="truncate text-slate-300" title={r.trueQuality}>
-        {r.trueQuality || '—'}
+        {r.trueQuality || '·'}
       </div>
-      <div>{r.verdict === 'ERROR' ? <span className="text-slate-600">—</span> : <ConfBar value={r.confidence} />}</div>
+      <div>
+        {r.verdict === 'ERROR' ? <span className="text-slate-600">·</span> : <ConfBar value={r.confidence} />}
+      </div>
     </div>
   )
 }
@@ -111,17 +114,16 @@ export function ResultsTable({
 }) {
   const { ref, h } = useHeight()
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      {/* header */}
+    <div className="fade-in flex min-h-0 flex-1 flex-col">
       <div
-        className="grid items-center gap-2 border-b border-slate-700 bg-[#0d111a] px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400"
+        className="grid items-center gap-2 border-b border-slate-800 bg-[#0d1119] px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500"
         style={{ gridTemplateColumns: COLS }}
       >
         {HEADERS.map((hd) => (
           <button
             key={hd.key}
             onClick={() => onSort(hd.key)}
-            className={`flex items-center gap-1 hover:text-slate-200 ${hd.align ?? 'justify-start'}`}
+            className={`flex items-center gap-1 transition-colors hover:text-slate-200 ${hd.align ?? 'justify-start'}`}
           >
             {hd.label}
             <span className="text-sky-400">
@@ -131,11 +133,10 @@ export function ResultsTable({
         ))}
       </div>
 
-      {/* virtualized rows */}
       <div ref={ref} className="min-h-0 flex-1">
         {rows.length === 0 ? (
           <div className="flex h-full items-center justify-center text-sm text-slate-600">
-            No tracks to show.
+            No tracks match the current filter.
           </div>
         ) : (
           <List

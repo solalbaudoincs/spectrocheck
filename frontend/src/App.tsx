@@ -86,12 +86,11 @@ export default function App() {
     return () => esRef.current?.close()
   }, [])
 
-  // Default the playlist selection to something containing "final", else first non-empty.
+  // Default the playlist to one containing "final", else the first non-empty one.
   useEffect(() => {
     if (playlist || !pl.playlists.length) return
     const real = pl.playlists.filter((p) => !p.is_folder)
-    const pick =
-      real.find((p) => /final/i.test(p.name)) ?? real.find((p) => p.count > 0) ?? real[0]
+    const pick = real.find((p) => /final/i.test(p.name)) ?? real.find((p) => p.count > 0) ?? real[0]
     if (pick) setPlaylist(pick.name)
   }, [pl, playlist])
 
@@ -132,8 +131,7 @@ export default function App() {
     const q = search.trim().toLowerCase()
     if (q)
       rows = rows.filter(
-        (r) =>
-          r.name.toLowerCase().includes(q) || (r.artist || '').toLowerCase().includes(q),
+        (r) => r.name.toLowerCase().includes(q) || (r.artist || '').toLowerCase().includes(q),
       )
 
     const { key, dir } = sort
@@ -177,22 +175,22 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen flex-col bg-[#0b0e14] text-slate-200">
+    <div className="flex h-screen flex-col bg-[#090c12] text-slate-200">
       {/* header */}
-      <header className="flex items-center justify-between border-b border-slate-800 px-4 py-2.5">
-        <div className="flex items-baseline gap-3">
-          <h1 className="text-sm font-bold tracking-tight text-slate-100">
-            🎛️ Transcode Detector
-          </h1>
-          <span className="text-xs text-slate-500">
+      <header className="flex items-center justify-between border-b border-slate-800/80 bg-[#0d1119] px-5 py-2.5">
+        <div className="flex items-center gap-3">
+          <span className="grid h-7 w-7 place-items-center rounded-lg bg-sky-500/15 text-sm ring-1 ring-sky-500/30">
+            🎛️
+          </span>
+          <h1 className="text-sm font-bold tracking-tight text-slate-100">Transcode Detector</h1>
+          <span className="hidden text-slate-700 sm:inline">/</span>
+          <span className="hidden text-xs text-slate-500 sm:inline">
             flags audio whose real quality is below its tag
           </span>
         </div>
-        <div className="flex items-center gap-2 text-xs">
-          <span
-            className={`h-2 w-2 rounded-full ${health?.ok ? 'bg-emerald-400' : 'bg-rose-500'}`}
-          />
-          <span className="mono text-slate-500">
+        <div className="flex items-center gap-2 rounded-lg bg-[#0b0f17] px-2.5 py-1 ring-1 ring-slate-800">
+          <span className={`h-2 w-2 rounded-full ${health?.ok ? 'bg-emerald-400' : 'bg-rose-500'}`} />
+          <span className="mono text-[11px] text-slate-500">
             {health?.ok
               ? (health.ffmpeg || '').split(' ').slice(0, 3).join(' ')
               : health?.error || 'checking…'}
@@ -220,32 +218,30 @@ export default function App() {
       />
 
       {/* filter + summary + export bar */}
-      <div className="flex flex-wrap items-center gap-3 border-b border-slate-800 px-4 py-2">
+      <div className="flex flex-wrap items-center gap-3 border-b border-slate-800/80 px-5 py-2.5">
         <FilterChips counts={counts} active={active} onToggle={onToggleFilter} />
         <div className="ml-auto flex items-center gap-3">
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="search…"
-            className="mono w-44 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-200"
+            placeholder="search track or artist"
+            className="mono w-52 rounded-lg border border-slate-700 bg-[#0b0f17] px-2.5 py-1.5 text-xs text-slate-200 transition focus:border-sky-500"
           />
-          <span className="text-xs text-slate-500">
+          <span className="mono text-xs text-slate-500">
             {results.length} scanned
-            {flagged > 0 && (
-              <span className="ml-1 text-rose-400">· {flagged} flagged</span>
-            )}
+            {flagged > 0 && <span className="ml-1.5 text-rose-400">{flagged} flagged</span>}
           </span>
           {results.length > 0 && (
             <div className="flex gap-1">
               <button
                 onClick={() => exportView('csv')}
-                className="rounded border border-slate-700 px-2 py-1 text-xs text-slate-300 hover:bg-slate-800"
+                className="rounded-lg border border-slate-700 px-2.5 py-1 text-xs text-slate-300 transition hover:border-slate-600 hover:bg-slate-800"
               >
                 CSV
               </button>
               <button
                 onClick={() => exportView('json')}
-                className="rounded border border-slate-700 px-2 py-1 text-xs text-slate-300 hover:bg-slate-800"
+                className="rounded-lg border border-slate-700 px-2.5 py-1 text-xs text-slate-300 transition hover:border-slate-600 hover:bg-slate-800"
               >
                 JSON
               </button>
@@ -257,14 +253,17 @@ export default function App() {
       {/* main */}
       <main className="flex min-h-0 flex-1">
         {results.length === 0 && !scanning ? (
-          <div className="flex flex-1 flex-col items-center justify-center gap-2 text-center text-slate-600">
-            <div className="text-4xl opacity-40">📊</div>
-            <p className="text-sm">
-              Pick a Rekordbox playlist (or a folder) and hit <span className="text-slate-400">Scan</span>.
+          <div className="fade-in flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center text-slate-600">
+            <div className="grid h-14 w-14 place-items-center rounded-2xl bg-sky-500/10 text-3xl ring-1 ring-sky-500/20">
+              📊
+            </div>
+            <p className="text-sm text-slate-400">
+              Pick a Rekordbox playlist or a folder, then hit{' '}
+              <span className="font-semibold text-sky-300">Scan</span>.
             </p>
-            <p className="max-w-md text-xs">
-              Each track is decoded and its high-frequency cutoff measured. A 320-tagged file
-              whose spectrum brick-walls at 16 kHz is a transcode — the spectrogram proves it.
+            <p className="max-w-md text-xs leading-relaxed">
+              Each track is decoded and its high-frequency cutoff measured. A 320-tagged file whose
+              spectrum brick-walls at 16 kHz is a transcode, and the spectrogram proves it.
             </p>
           </div>
         ) : (

@@ -249,8 +249,8 @@ def analyze_samples(
         return Detection(
             cutoff_khz, nyq_khz, ref_db, floor_db, plateau_db, False, slope_db,
             VERDICT_SUSPECT, 0.1, "inconclusive (near-silent)",
-            "Near-silent or no measurable signal in the loud windows — cannot assess "
-            "high-frequency content; review manually.",
+            "Near-silent or no measurable signal in the loud windows; cannot assess "
+            "high-frequency content. Review manually.",
         )
 
     # The expected cutoff can never exceed the file's own Nyquist: a genuine
@@ -273,14 +273,14 @@ def analyze_samples(
                                 + min(max(slope_db - 30.0, 0.0), 40.0) / 200.0)
                 reason = (
                     f"Lossless {container.upper()} container but the spectrum "
-                    f"brick-walls at {cutoff_khz:.1f} kHz ({slope_db:.0f} dB cliff) "
-                    f"— a lossy original re-wrapped as lossless."
+                    f"brick-walls at {cutoff_khz:.1f} kHz ({slope_db:.0f} dB cliff). "
+                    f"A lossy original re-wrapped as lossless."
                 )
             else:
                 conf = _clamp01(0.4 + 0.05 * min(19.0 - cutoff_khz, 5.0))
                 reason = (
                     f"Lossless {container.upper()} container but HF only reaches "
-                    f"{cutoff_khz:.1f} kHz — likely a lossy source, no hard shelf; review."
+                    f"{cutoff_khz:.1f} kHz; likely a lossy source, no hard shelf. Review."
                 )
             return Detection(cutoff_khz, expected_khz, ref_db, floor_db, plateau_db,
                              sharp, slope_db, verdict, conf, true_quality, reason)
@@ -288,7 +288,7 @@ def analyze_samples(
         conf = _clamp01(0.75 + 0.04 * min(cutoff_khz - 19.0, 5.0))
         reason = (
             f"Lossless {container.upper()} with full-band spectrum to "
-            f"{cutoff_khz:.1f} kHz — consistent with a genuine lossless source."
+            f"{cutoff_khz:.1f} kHz, consistent with a genuine lossless source."
         )
         return Detection(cutoff_khz, expected_khz, ref_db, floor_db, plateau_db,
                          sharp, slope_db, verdict, conf, true_quality, reason)
@@ -301,15 +301,15 @@ def analyze_samples(
         reason = (
             f"Cutoff {cutoff_khz:.1f} kHz is {gap:.1f} kHz below the "
             f"{expected_khz:.1f} kHz floor expected for the declared bitrate, with a "
-            f"sharp {slope_db:.0f} dB brick-wall shelf — re-encoded from a lossy source."
+            f"sharp {slope_db:.0f} dB brick-wall shelf. Re-encoded from a lossy source."
         )
     elif gap > GAP_KHZ:
         verdict = VERDICT_SUSPECT
         conf = _clamp01(0.2 + 0.06 * min(gap, 5.0))
         reason = (
             f"Cutoff {cutoff_khz:.1f} kHz is below the expected {expected_khz:.1f} kHz "
-            f"but the roll-off is gradual (no brick-wall) — could be genuinely "
-            f"low-HF / acoustic material; flagged for manual review."
+            f"but the roll-off is gradual (no brick-wall); could be genuinely "
+            f"low-HF or acoustic material. Flagged for manual review."
         )
     else:
         verdict = VERDICT_OK

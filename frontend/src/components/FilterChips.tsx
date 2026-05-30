@@ -22,15 +22,15 @@ export function FilterChips({
           <button
             key={v}
             onClick={() => onToggle(v)}
-            title={`Filter ${v}`}
-            className={`flex items-center gap-1.5 rounded-md border px-2 py-1 transition ${
+            title={`Show only ${v}`}
+            className={`flex items-center gap-1.5 rounded-lg border px-2 py-1 transition ${
               on
-                ? 'border-slate-600 bg-slate-700/40'
-                : 'border-slate-800 bg-transparent opacity-40 hover:opacity-75'
+                ? 'border-slate-700 bg-slate-800/60'
+                : 'border-transparent opacity-40 hover:opacity-80'
             }`}
           >
             <VerdictBadge verdict={v} />
-            <span className="mono text-xs text-slate-300">{counts[v]}</span>
+            <span className="mono text-xs tabular-nums text-slate-300">{counts[v]}</span>
           </button>
         )
       })}
