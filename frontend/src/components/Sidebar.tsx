@@ -16,6 +16,7 @@ export function Sidebar({
   folderPath,
   setFolderPath,
   onScan,
+  onCancel,
   scanning,
   done,
   total,
@@ -31,6 +32,7 @@ export function Sidebar({
   folderPath: string
   setFolderPath: (s: string) => void
   onScan: () => void
+  onCancel: () => void
   scanning: boolean
   done: number
   total: number
@@ -188,16 +190,23 @@ export function Sidebar({
             </datalist>
           </div>
         )}
-        <button
-          onClick={onScan}
-          disabled={!canScan}
-          className="flex w-full items-center justify-center gap-2 rounded-md bg-accent py-2 text-sm font-semibold text-white transition hover:bg-accent-2 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          {scanning && (
-            <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-          )}
-          {scanning ? `Scanning ${done}/${total}` : 'Scan'}
-        </button>
+        {scanning ? (
+          <button
+            onClick={onCancel}
+            className="flex w-full items-center justify-center gap-2 rounded-md bg-rose-600 py-2 text-sm font-semibold text-white transition hover:bg-rose-500"
+          >
+            <span className="h-2.5 w-2.5 rounded-[2px] bg-white/90" />
+            Stop scan · {done}/{total}
+          </button>
+        ) : (
+          <button
+            onClick={onScan}
+            disabled={!canScan}
+            className="w-full rounded-md bg-accent py-2 text-sm font-semibold text-white transition hover:bg-accent-2 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Scan
+          </button>
+        )}
       </div>
     </aside>
   )

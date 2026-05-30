@@ -79,6 +79,7 @@ class ScanJob:
         self.total = len(items)
         self.results: list[dict] = []
         self.done = False
+        self.cancelled = False
         self.error: str | None = None
         self.queue: asyncio.Queue = asyncio.Queue()
 
@@ -118,7 +119,11 @@ async def _run_job(job: ScanJob):
     sem = asyncio.Semaphore(MAX_WORKERS)
 
     async def worker(item: dict):
+        if job.cancelled:
+            return
         async with sem:
+            if job.cancelled:  # cancelled while queued
+                return
             if not item["path"]:
                 rec = scanner.error_record(
                     item["extra"].get("originalPath") or item["extra"].get("title") or "?",
@@ -136,7 +141,8 @@ async def _run_job(job: ScanJob):
         job.error = str(exc)
     job.done = True
     await job.queue.put({"type": "done", "data": {
-        "total": job.total, "done": len(job.results), "error": job.error}})
+        "total": job.total, "done": len(job.results),
+        "error": job.error, "cancelled": job.cancelled}})
 
 
 # --------------------------------------------------------------------------- #
@@ -211,6 +217,15 @@ async def scan_results(scan_id: str):
         "done": len(job.results), "finished": job.done, "error": job.error,
         "results": job.results,
     }
+
+
+@app.post("/api/scan/{scan_id}/cancel")
+async def cancel_scan(scan_id: str):
+    job = SCANS.get(scan_id)
+    if not job:
+        raise HTTPException(404, "Unknown scan id")
+    job.cancelled = True
+    return {"cancelled": True, "done": len(job.results), "total": job.total}
 
 
 @app.get("/api/scan/{scan_id}/events")

@@ -66,6 +66,7 @@ export default function App() {
   const [search, setSearch] = useState('')
 
   const esRef = useRef<EventSource | null>(null)
+  const scanIdRef = useRef<string>('')
 
   useEffect(() => {
     api.health().then(setHealth).catch(() => setHealth({ ok: false, error: 'backend unreachable' }))
@@ -104,6 +105,7 @@ export default function App() {
           : { playlist, contentsRoot: contentsRoot || undefined }
     try {
       const s = await api.startScan(req)
+      scanIdRef.current = s.scanId
       setTotal(s.total)
       esRef.current = subscribeScan(
         s.scanId,
@@ -114,6 +116,12 @@ export default function App() {
       setScanning(false)
       alert('Scan failed: ' + (e instanceof Error ? e.message : String(e)))
     }
+  }
+
+  const cancelScan = () => {
+    esRef.current?.close()
+    setScanning(false)
+    if (scanIdRef.current) api.cancelScan(scanIdRef.current).catch(() => {})
   }
 
   const counts = useMemo(() => {
@@ -212,6 +220,7 @@ export default function App() {
           folderPath={folderPath}
           setFolderPath={setFolderPath}
           onScan={startScan}
+          onCancel={cancelScan}
           scanning={scanning}
           done={results.length}
           total={total}
