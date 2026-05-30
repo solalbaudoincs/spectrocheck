@@ -39,6 +39,16 @@ export interface Health {
   error?: string
 }
 
+export interface RekordboxStatus {
+  available: boolean
+  playlists: Playlist[]
+  error?: string
+  version?: string | null
+  dbPath?: string | null
+  dbDir?: string | null
+  usbRoots?: string[]
+}
+
 export interface ScanRequest {
   path?: string
   playlist?: string
@@ -65,10 +75,7 @@ async function j<T>(r: Response): Promise<T> {
 export const api = {
   health: () => fetch('/api/health').then(j<Health>),
   usbRoots: () => fetch('/api/rekordbox/usb-roots').then(j<{ roots: string[] }>),
-  playlists: () =>
-    fetch('/api/rekordbox/playlists').then(
-      j<{ available: boolean; playlists: Playlist[]; error?: string }>,
-    ),
+  playlists: () => fetch('/api/rekordbox/playlists').then(j<RekordboxStatus>),
   startScan: (req: ScanRequest) =>
     fetch('/api/scan', {
       method: 'POST',
@@ -87,6 +94,7 @@ export const api = {
     if (measured) q.set('measured', String(measured))
     return `/api/spectrogram?${q.toString()}`
   },
+  coverUrl: (file: string) => `/api/cover?file=${encodeURIComponent(file)}`,
 }
 
 /** Subscribe to a scan's SSE stream. Returns the EventSource so it can be closed. */

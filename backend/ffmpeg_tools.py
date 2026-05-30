@@ -126,3 +126,19 @@ def decode_mono_f32(path: str, sample_rate: int, max_seconds: float | None = Non
     if samples.size == 0:
         raise DecodeError(f"ffmpeg produced no samples for {path}")
     return samples, sample_rate
+
+
+def extract_cover(path: str, size: int = 160) -> bytes | None:
+    """Return the file's embedded album art as a square JPEG, or None if absent."""
+    cmd = [
+        FFMPEG, "-v", "error", "-i", path, "-map", "0:v:0", "-frames:v", "1",
+        "-vf", f"scale={size}:{size}:force_original_aspect_ratio=increase,crop={size}:{size}",
+        "-f", "image2pipe", "-vcodec", "mjpeg", "-",
+    ]
+    try:
+        proc = subprocess.run(cmd, capture_output=True, timeout=20, creationflags=_NO_WINDOW)
+    except subprocess.SubprocessError:
+        return None
+    if proc.returncode != 0 or not proc.stdout:
+        return None
+    return proc.stdout

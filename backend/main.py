@@ -60,6 +60,7 @@ app.add_middleware(
 )
 
 SCANS: dict[str, "ScanJob"] = {}
+_COVER_CACHE: dict[str, bytes | None] = {}
 
 
 class ScanRequest(BaseModel):
@@ -157,17 +158,21 @@ async def usb_roots():
 
 @app.get("/api/rekordbox/playlists")
 async def playlists():
+    """Playlists plus source metadata (Rekordbox version, db path, USB roots)."""
     loop = asyncio.get_running_loop()
 
     def work():
-        db = rekordbox_source.open_database()
-        return [asdict(p) for p in rekordbox_source.list_playlists(db)]
+        info = rekordbox_source.rekordbox_info()
+        roots = rekordbox_source.find_usb_contents_roots()
+        try:
+            db = rekordbox_source.open_database()
+            pls = [asdict(p) for p in rekordbox_source.list_playlists(db)]
+            return {"available": True, "playlists": pls, "usbRoots": roots, **info}
+        except Exception as exc:  # noqa: BLE001
+            return {"available": False, "error": str(exc), "playlists": [],
+                    "usbRoots": roots, **info}
 
-    try:
-        data = await loop.run_in_executor(EXEC, work)
-        return {"available": True, "playlists": data}
-    except Exception as exc:  # noqa: BLE001
-        return {"available": False, "error": str(exc), "playlists": []}
+    return await loop.run_in_executor(EXEC, work)
 
 
 @app.post("/api/scan")
@@ -249,6 +254,22 @@ async def export(scan_id: str, format: str = Query("json"), verdicts: str | None
         content=json.dumps(rows, indent=2), media_type="application/json",
         headers={"Content-Disposition": f'attachment; filename="scan_{scan_id}.json"'},
     )
+
+
+@app.get("/api/cover")
+async def cover(file: str):
+    if not os.path.isfile(file):
+        raise HTTPException(404, "File not found")
+    if file not in _COVER_CACHE:
+        if len(_COVER_CACHE) > 4000:
+            _COVER_CACHE.clear()
+        loop = asyncio.get_running_loop()
+        _COVER_CACHE[file] = await loop.run_in_executor(EXEC, ffmpeg_tools.extract_cover, file)
+    data = _COVER_CACHE[file]
+    if not data:
+        raise HTTPException(404, "No embedded cover")
+    return Response(content=data, media_type="image/jpeg",
+                    headers={"Cache-Control": "max-age=3600"})
 
 
 @app.get("/api/spectrogram")

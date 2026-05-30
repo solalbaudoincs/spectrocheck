@@ -3,12 +3,13 @@ import type { ReactNode } from 'react'
 import { api } from '../api'
 import type { TrackResult } from '../api'
 import { VerdictBadge } from './VerdictBadge'
+import { Cover } from './Cover'
 
 function Fact({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="text-[10px] uppercase tracking-wider text-slate-500">{label}</span>
-      <span className="mono text-sm text-slate-200">{value}</span>
+      <span className="text-[10px] uppercase tracking-wider text-muted">{label}</span>
+      <span className="text-sm text-ink">{value}</span>
     </div>
   )
 }
@@ -28,23 +29,24 @@ export function DetailPanel({ row, onClose }: { row: TrackResult; onClose: () =>
   }, [src])
 
   return (
-    <aside className="panel-in flex w-[560px] shrink-0 flex-col border-l border-slate-800 bg-[#0d1119]">
-      <div className="flex items-start justify-between gap-3 border-b border-slate-800 p-4">
-        <div className="min-w-0">
+    <aside className="panel-in flex w-[560px] shrink-0 flex-col border-l border-line bg-surface">
+      <div className="flex items-start gap-3 border-b border-line p-4">
+        <Cover key={row.file} file={row.file} size={56} radius="rounded-lg" />
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <VerdictBadge verdict={row.verdict} />
-            <span className="tabular-nums text-xs text-slate-500">
+            <span className="tabular-nums text-xs text-muted">
               confidence {row.confidence.toFixed(2)}
             </span>
           </div>
-          <h2 className="mono mt-2 truncate text-sm text-slate-100" title={row.name}>
+          <h2 className="mt-1.5 truncate text-sm font-medium text-ink" title={row.name}>
             {row.name}
           </h2>
-          {row.artist && <p className="truncate text-xs text-slate-400">{row.artist}</p>}
+          {row.artist && <p className="truncate text-xs text-muted">{row.artist}</p>}
         </div>
         <button
           onClick={onClose}
-          className="rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-800 hover:text-slate-200"
+          className="rounded-md p-1.5 text-muted transition hover:bg-panel hover:text-ink"
           aria-label="Close"
         >
           ✕
@@ -52,7 +54,7 @@ export function DetailPanel({ row, onClose }: { row: TrackResult; onClose: () =>
       </div>
 
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
-        <p className="rounded-lg border border-slate-800 bg-[#0b0f17] p-3 text-sm leading-relaxed text-slate-300">
+        <p className="rounded-lg border border-line bg-input p-3 text-sm leading-relaxed text-body">
           {row.reason}
         </p>
 
@@ -62,7 +64,7 @@ export function DetailPanel({ row, onClose }: { row: TrackResult; onClose: () =>
           <Fact label="Sample rate" value={row.sampleRate ? `${row.sampleRate} Hz` : '·'} />
           <Fact
             label="Measured cutoff"
-            value={<span className="text-sky-300">{row.cutoffKhz ? `${row.cutoffKhz.toFixed(1)} kHz` : '·'}</span>}
+            value={<span className="text-accent-2">{row.cutoffKhz ? `${row.cutoffKhz.toFixed(1)} kHz` : '·'}</span>}
           />
           <Fact label="Expected ≥" value={`${row.expectedCutoffKhz.toFixed(1)} kHz`} />
           <Fact
@@ -71,7 +73,7 @@ export function DetailPanel({ row, onClose }: { row: TrackResult; onClose: () =>
               row.shelfDetected ? (
                 <span className="text-rose-300">yes ({row.shelfSlopeDb.toFixed(0)} dB)</span>
               ) : (
-                <span className="text-slate-400">no</span>
+                <span className="text-muted">no</span>
               )
             }
           />
@@ -81,14 +83,14 @@ export function DetailPanel({ row, onClose }: { row: TrackResult; onClose: () =>
         </div>
 
         <div>
-          <div className="mb-1.5 text-[10px] uppercase tracking-wider text-slate-500">
+          <div className="mb-1.5 text-[10px] uppercase tracking-wider text-muted">
             Spectrogram · the proof
           </div>
-          <div className="relative overflow-hidden rounded-lg border border-slate-800 bg-black">
+          <div className="relative overflow-hidden rounded-lg border border-line bg-black">
             {canSpec ? (
               <>
                 {!loaded && !failed && (
-                  <div className="flex h-64 items-center justify-center text-xs text-slate-500">
+                  <div className="flex h-64 items-center justify-center text-xs text-muted">
                     rendering spectrogram…
                   </div>
                 )}
@@ -107,23 +109,23 @@ export function DetailPanel({ row, onClose }: { row: TrackResult; onClose: () =>
                 />
               </>
             ) : (
-              <div className="flex h-64 items-center justify-center text-xs text-slate-600">
+              <div className="flex h-64 items-center justify-center text-xs text-muted">
                 no spectrogram available
               </div>
             )}
           </div>
-          <p className="mt-2 text-[11px] leading-snug text-slate-500">
+          <p className="mt-2 text-[11px] leading-snug text-muted">
             Cyan line = cutoff expected for the declared bitrate. Red line = the cutoff actually
             measured. Black space above the red line is signal the encoder threw away.
           </p>
         </div>
 
-        <div className="space-y-2 border-t border-slate-800 pt-3">
-          <Fact label="Analysed file" value={<span className="break-all text-xs text-slate-400">{row.file}</span>} />
+        <div className="space-y-2 border-t border-line pt-3">
+          <Fact label="Analysed file" value={<span className="mono break-all text-xs text-muted">{row.file}</span>} />
           {row.originalPath && row.originalPath !== row.file && (
             <Fact
               label="Library original"
-              value={<span className="break-all text-xs text-slate-500">{row.originalPath}</span>}
+              value={<span className="mono break-all text-xs text-muted">{row.originalPath}</span>}
             />
           )}
         </div>

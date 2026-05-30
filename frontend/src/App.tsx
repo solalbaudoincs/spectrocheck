@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { api, subscribeScan } from './api'
-import type { Health, Playlist, TrackResult, Verdict } from './api'
-import { Toolbar } from './components/Toolbar'
+import type { Health, RekordboxStatus, TrackResult, Verdict } from './api'
+import { Sidebar } from './components/Sidebar'
 import { FilterChips } from './components/FilterChips'
 import { ResultsTable, type Sort, type SortKey } from './components/ResultsTable'
 import { DetailPanel } from './components/DetailPanel'
@@ -16,7 +16,6 @@ const SEVERITY: Record<Verdict, number> = {
   ERROR: 4,
 }
 
-// Columns whose natural default sort is descending (bigger = more interesting).
 const DESC_DEFAULT: SortKey[] = ['declaredKbps', 'cutoffKhz', 'confidence']
 
 const EXPORT_COLS = [
@@ -48,10 +47,7 @@ function rowsToCsv(rows: TrackResult[]): string {
 
 export default function App() {
   const [health, setHealth] = useState<Health | null>(null)
-  const [pl, setPl] = useState<{ available: boolean; playlists: Playlist[]; error?: string }>({
-    available: false,
-    playlists: [],
-  })
+  const [pl, setPl] = useState<RekordboxStatus>({ available: false, playlists: [] })
   const [usbRoots, setUsbRoots] = useState<string[]>([])
 
   const [mode, setMode] = useState<Mode>('rekordbox')
@@ -73,15 +69,13 @@ export default function App() {
   useEffect(() => {
     api.health().then(setHealth).catch(() => setHealth({ ok: false, error: 'backend unreachable' }))
     api
-      .usbRoots()
-      .then((d) => {
-        setUsbRoots(d.roots)
-        if (d.roots[0]) setContentsRoot(d.roots[0])
-      })
-      .catch(() => {})
-    api
       .playlists()
-      .then(setPl)
+      .then((s) => {
+        setPl(s)
+        const roots = s.usbRoots ?? []
+        setUsbRoots(roots)
+        if (roots[0]) setContentsRoot((c) => c || roots[0])
+      })
       .catch(() => setPl({ available: false, playlists: [], error: 'failed to read Rekordbox DB' }))
     return () => esRef.current?.close()
   }, [])
@@ -168,29 +162,28 @@ export default function App() {
 
   const flagged = (counts.TRANSCODE || 0) + (counts['LOSSY SOURCE'] || 0)
 
-  // Export exactly what is on screen (verdict- and search-filtered, sorted).
   const exportView = (format: 'csv' | 'json') => {
     if (format === 'csv') downloadBlob('transcode-scan.csv', rowsToCsv(view), 'text/csv')
     else downloadBlob('transcode-scan.json', JSON.stringify(view, null, 2), 'application/json')
   }
 
   return (
-    <div className="flex h-screen flex-col bg-[#090c12] text-slate-200">
+    <div className="flex h-screen flex-col bg-base text-body">
       {/* header */}
-      <header className="flex items-center justify-between border-b border-slate-800/80 bg-[#0d1119] px-5 py-2.5">
-        <div className="flex items-center gap-3">
-          <span className="grid h-7 w-7 place-items-center rounded-lg bg-sky-500/15 text-sm ring-1 ring-sky-500/30">
+      <header className="flex items-center justify-between border-b border-line bg-surface px-4 py-2.5">
+        <div className="flex items-center gap-2.5">
+          <span className="grid h-7 w-7 place-items-center rounded-md bg-accent/15 text-sm ring-1 ring-accent/30">
             🎛️
           </span>
-          <h1 className="text-sm font-bold tracking-tight text-slate-100">Transcode Detector</h1>
-          <span className="hidden text-slate-700 sm:inline">/</span>
-          <span className="hidden text-xs text-slate-500 sm:inline">
+          <h1 className="text-sm font-semibold tracking-tight text-ink">Transcode Detector</h1>
+          <span className="hidden text-line-strong sm:inline">/</span>
+          <span className="hidden text-xs text-muted sm:inline">
             flags audio whose real quality is below its tag
           </span>
         </div>
-        <div className="flex items-center gap-2 rounded-lg bg-[#0b0f17] px-2.5 py-1 ring-1 ring-slate-800">
+        <div className="flex items-center gap-2 rounded-md bg-input px-2.5 py-1 ring-1 ring-line">
           <span className={`h-2 w-2 rounded-full ${health?.ok ? 'bg-emerald-400' : 'bg-rose-500'}`} />
-          <span className="mono text-[11px] text-slate-500">
+          <span className="mono text-[11px] text-muted">
             {health?.ok
               ? (health.ffmpeg || '').split(' ').slice(0, 3).join(' ')
               : health?.error || 'checking…'}
@@ -198,87 +191,88 @@ export default function App() {
         </div>
       </header>
 
-      <Toolbar
-        mode={mode}
-        setMode={setMode}
-        rekordboxAvailable={pl.available}
-        rekordboxError={pl.error}
-        playlists={pl.playlists}
-        playlist={playlist}
-        setPlaylist={setPlaylist}
-        usbRoots={usbRoots}
-        contentsRoot={contentsRoot}
-        setContentsRoot={setContentsRoot}
-        folderPath={folderPath}
-        setFolderPath={setFolderPath}
-        onScan={startScan}
-        scanning={scanning}
-        done={results.length}
-        total={total}
-      />
+      <div className="flex min-h-0 flex-1">
+        <Sidebar
+          status={pl}
+          mode={mode}
+          setMode={setMode}
+          playlist={playlist}
+          setPlaylist={setPlaylist}
+          usbRoots={usbRoots}
+          contentsRoot={contentsRoot}
+          setContentsRoot={setContentsRoot}
+          folderPath={folderPath}
+          setFolderPath={setFolderPath}
+          onScan={startScan}
+          scanning={scanning}
+          done={results.length}
+          total={total}
+        />
 
-      {/* filter + summary + export bar */}
-      <div className="flex flex-wrap items-center gap-3 border-b border-slate-800/80 px-5 py-2.5">
-        <FilterChips counts={counts} active={active} onToggle={onToggleFilter} />
-        <div className="ml-auto flex items-center gap-3">
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="search track or artist"
-            className="mono w-52 rounded-lg border border-slate-700 bg-[#0b0f17] px-2.5 py-1.5 text-xs text-slate-200 transition focus:border-sky-500"
-          />
-          <span className="mono text-xs text-slate-500">
-            {results.length} scanned
-            {flagged > 0 && <span className="ml-1.5 text-rose-400">{flagged} flagged</span>}
-          </span>
-          {results.length > 0 && (
-            <div className="flex gap-1">
-              <button
-                onClick={() => exportView('csv')}
-                className="rounded-lg border border-slate-700 px-2.5 py-1 text-xs text-slate-300 transition hover:border-slate-600 hover:bg-slate-800"
-              >
-                CSV
-              </button>
-              <button
-                onClick={() => exportView('json')}
-                className="rounded-lg border border-slate-700 px-2.5 py-1 text-xs text-slate-300 transition hover:border-slate-600 hover:bg-slate-800"
-              >
-                JSON
-              </button>
+        <main className="flex min-h-0 flex-1 flex-col">
+          {/* filter + summary + export bar */}
+          <div className="flex flex-wrap items-center gap-3 border-b border-line bg-surface/60 px-4 py-2.5">
+            <FilterChips counts={counts} active={active} onToggle={onToggleFilter} />
+            <div className="ml-auto flex items-center gap-3">
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="search track or artist"
+                className="w-52 rounded-md border border-line bg-input px-2.5 py-1.5 text-xs text-body transition focus:border-accent"
+              />
+              <span className="text-xs text-muted">
+                {results.length} scanned
+                {flagged > 0 && <span className="ml-1.5 text-rose-400">{flagged} flagged</span>}
+              </span>
+              {results.length > 0 && (
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => exportView('csv')}
+                    className="rounded-md border border-line px-2.5 py-1 text-xs text-body transition hover:border-line-strong hover:bg-panel"
+                  >
+                    CSV
+                  </button>
+                  <button
+                    onClick={() => exportView('json')}
+                    className="rounded-md border border-line px-2.5 py-1 text-xs text-body transition hover:border-line-strong hover:bg-panel"
+                  >
+                    JSON
+                  </button>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      </div>
-
-      {/* main */}
-      <main className="flex min-h-0 flex-1">
-        {results.length === 0 && !scanning ? (
-          <div className="fade-in flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center text-slate-600">
-            <div className="grid h-14 w-14 place-items-center rounded-2xl bg-sky-500/10 text-3xl ring-1 ring-sky-500/20">
-              📊
-            </div>
-            <p className="text-sm text-slate-400">
-              Pick a Rekordbox playlist or a folder, then hit{' '}
-              <span className="font-semibold text-sky-300">Scan</span>.
-            </p>
-            <p className="max-w-md text-xs leading-relaxed">
-              Each track is decoded and its high-frequency cutoff measured. A 320-tagged file whose
-              spectrum brick-walls at 16 kHz is a transcode, and the spectrogram proves it.
-            </p>
           </div>
-        ) : (
-          <>
-            <ResultsTable
-              rows={view}
-              sort={sort}
-              onSort={onSort}
-              selected={selected?.file ?? null}
-              onSelect={setSelected}
-            />
-            {selected && <DetailPanel row={selected} onClose={() => setSelected(null)} />}
-          </>
-        )}
-      </main>
+
+          <div className="flex min-h-0 flex-1">
+            {results.length === 0 && !scanning ? (
+              <div className="fade-in flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center text-muted">
+                <div className="grid h-14 w-14 place-items-center rounded-2xl bg-accent/10 text-3xl ring-1 ring-accent/20">
+                  📊
+                </div>
+                <p className="text-sm text-body">
+                  Pick a playlist on the left, then hit{' '}
+                  <span className="font-semibold text-accent-2">Scan</span>.
+                </p>
+                <p className="max-w-md text-xs leading-relaxed">
+                  Each track is decoded and its high-frequency cutoff measured. A 320-tagged file
+                  whose spectrum brick-walls at 16 kHz is a transcode, and the spectrogram proves it.
+                </p>
+              </div>
+            ) : (
+              <>
+                <ResultsTable
+                  rows={view}
+                  sort={sort}
+                  onSort={onSort}
+                  selected={selected?.file ?? null}
+                  onSelect={setSelected}
+                />
+                {selected && <DetailPanel row={selected} onClose={() => setSelected(null)} />}
+              </>
+            )}
+          </div>
+        </main>
+      </div>
     </div>
   )
 }

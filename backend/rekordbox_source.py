@@ -39,6 +39,31 @@ class PlaylistTrack:
         return asdict(self)
 
 
+def rekordbox_info() -> dict:
+    """Best-effort source metadata: installed Rekordbox version + master.db path."""
+    info: dict = {"version": None, "dbPath": None, "dbDir": None}
+    try:
+        from pyrekordbox.config import get_config
+    except Exception:
+        return info
+    for section in ("rekordbox7", "rekordbox6", "rekordbox5"):
+        try:
+            version = get_config(section, "version")
+        except Exception:
+            version = None
+        if version:
+            info["version"] = str(version)
+            for key, field in (("db_path", "dbPath"), ("db_dir", "dbDir")):
+                try:
+                    val = get_config(section, key)
+                    if val:
+                        info[field] = str(val)
+                except Exception:
+                    pass
+            break
+    return info
+
+
 def find_usb_contents_roots() -> list[str]:
     """Detect exported-USB ``Contents`` folders (a drive with both PIONEER and Contents)."""
     roots: list[str] = []

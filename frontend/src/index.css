@@ -1,10 +1,25 @@
 @import "tailwindcss";
 
 /* ------------------------------------------------------------------ *
- * Design locks (taste): one theme (dark), one accent (sky), one
- * corner-radius scale (lg for surfaces/controls, md for chips, full
- * for bars). AA-contrast text on a layered near-black surface.
+ * Theme: Rekordbox-dark browser meets Linear-grade minimalism.
+ * One accent (Pioneer cyan-blue), one radius scale, dark-theme lock,
+ * AA-contrast text, clean sans data (tabular numerics), mono only for
+ * paths/versions.
  * ------------------------------------------------------------------ */
+@theme {
+  --color-base: #121519;
+  --color-surface: #171b21;
+  --color-panel: #1b2027;
+  --color-input: #0f1316;
+  --color-line: #262c34;
+  --color-line-strong: #323a45;
+  --color-ink: #eef2f6;
+  --color-body: #c0c8d2;
+  --color-muted: #6f7884;
+  --color-accent: #1aa3e8;
+  --color-accent-2: #4bb9f1;
+}
+
 :root {
   color-scheme: dark;
 }
@@ -17,9 +32,10 @@ body,
 
 body {
   margin: 0;
-  background: #090c12;
-  color: #aeb9c7;
-  font-family: ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+  background: #121519;
+  color: #c0c8d2;
+  font-family: "Inter", ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+  font-feature-settings: "cv02", "cv03", "cv04";
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -29,20 +45,18 @@ body {
 }
 
 ::selection {
-  background: rgba(56, 189, 248, 0.25);
+  background: rgba(26, 163, 232, 0.28);
 }
 
-/* Single accent-locked focus treatment; box-shadow follows each
- * element's own radius, so the shape lock is preserved. */
 input:focus-visible,
 select:focus-visible,
 button:focus-visible,
 a:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.5);
+  box-shadow: 0 0 0 2px rgba(26, 163, 232, 0.5);
 }
 
-/* Justified motion only: the detail panel enters, the table fades in. */
+/* Justified motion: detail panel enters, table fades, sidebar rows settle. */
 @keyframes panel-in {
   from {
     opacity: 0;
@@ -54,7 +68,7 @@ a:focus-visible {
   }
 }
 .panel-in {
-  animation: panel-in 0.18s ease-out;
+  animation: panel-in 0.16s ease-out;
 }
 
 @keyframes fade-in {
@@ -66,19 +80,19 @@ a:focus-visible {
   }
 }
 .fade-in {
-  animation: fade-in 0.22s ease-out;
+  animation: fade-in 0.2s ease-out;
 }
 
 *::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 9px;
+  height: 9px;
 }
 *::-webkit-scrollbar-thumb {
-  background: #232c3a;
+  background: #2a313b;
   border-radius: 9999px;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background: #2f3a4c;
+  background: #353e4a;
 }
 *::-webkit-scrollbar-track {
   background: transparent;
